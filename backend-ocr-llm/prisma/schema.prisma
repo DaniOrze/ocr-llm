@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model OcrResult {
+  id        Int      @id @default(autoincrement())
+  fileId    Int
+  text      String
+  createdAt DateTime @default(now())
+
+  // Relacionamento com UploadedFile
+  file UploadedFile @relation(fields: [fileId], references: [id])
+
+  // Relacionamento com LlmResult
+  llmResults LlmResult[]
+}
+
+model LlmResult {
+  id        Int      @id @default(autoincrement())
+  ocrId     Int
+  response  String
+  createdAt DateTime @default(now())
+
+  // Relacionamento com OcrResult
+  ocr OcrResult @relation(fields: [ocrId], references: [id])
+}
+
+model UploadedFile {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  filepath  String
+  createdAt DateTime @default(now())
+
+  // Relacionamento com OcrResult
+  ocrResults OcrResult[]
+}
