@@ -34,7 +34,7 @@ const items = [
     icon: BotMessageSquare,
   },
   {
-    title: "Upload",
+    title: "Transcrever OCR",
     url: "/upload",
     icon: HardDriveUpload,
   },
