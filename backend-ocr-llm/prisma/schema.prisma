@@ -23,6 +23,7 @@ model OcrResult {
 model LlmResult {
   id        Int      @id @default(autoincrement())
   ocrId     Int
+  question  String
   response  String
   createdAt DateTime @default(now())
 

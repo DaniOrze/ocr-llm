@@ -8,6 +8,7 @@ export class LlmController {
     private readonly llmService: LlmService,
     private readonly prisma: PrismaService,
   ) {}
+
   @Post('ask')
   async askLlm(
     @Body() { question, ocrId }: { question: string; ocrId: number },
@@ -22,6 +23,15 @@ export class LlmController {
     const response = await this.llmService.generateText(
       ocr.text + '\n' + question,
     );
-    return { response };
+
+    const llmResult = await this.prisma.llmResult.create({
+      data: {
+        ocrId: ocr.id,
+        question: question,
+        response: response,
+      },
+    });
+
+    return { response, llmResultId: llmResult.id };
   }
 }
