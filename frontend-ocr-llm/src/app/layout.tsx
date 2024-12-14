@@ -1,6 +1,6 @@
 import "./globals.css"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "./sidebar/app-sidebar"
+import { AppSidebar } from "../components/sidebar/app-sidebar"
 
 export const metadata = {
   title: "OCR LLM",
