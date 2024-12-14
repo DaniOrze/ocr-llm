@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface OcrResult {
   text: string;
@@ -19,9 +22,11 @@ interface Document {
 }
 
 export default function DocumentView({ documentId }: { documentId: string }) {
+  const { toast } = useToast();
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,93 +48,128 @@ export default function DocumentView({ documentId }: { documentId: string }) {
 
   const handleDownloadPdf = async () => {
     if (!contentRef.current) return;
-  
+
     const element = contentRef.current;
-  
     const canvas = await html2canvas(element, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-  
+
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
       format: "a4",
     });
-  
-    const pageWidth = 210; 
+
+    const pageWidth = 210;
     const pageHeight = 297;
     const padding = 10;
     const imgWidth = pageWidth - padding * 2;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     let heightLeft = imgHeight;
     let position = padding;
-  
+
     pdf.addImage(imgData, "PNG", padding, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight - padding * 2; 
-  
+    heightLeft -= pageHeight - padding * 2;
+
     while (heightLeft > 0) {
       pdf.addPage();
       position = padding;
       pdf.addImage(imgData, "PNG", padding, position, imgWidth, imgHeight);
       heightLeft -= pageHeight - padding * 2;
     }
-  
+
+    for (let i = 0; i <= 100; i++) {
+      setDownloadProgress(i);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+
     pdf.save(`${document?.filename || "documento"}.pdf`);
+
+    toast({
+      description: "PDF gerado com sucesso!",
+    });
+    setDownloadProgress(0);
   };
-  
+
   if (loading) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="p-4">
+        <Progress value={50} />
+        <p>Carregando...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>{error}</div>;
+    toast({
+      description: error,
+      variant: "destructive",
+    });
+    return null;
   }
 
   if (!document) {
-    return <div>Documento não encontrado</div>;
+    toast({
+      description: "Documento não encontrado",
+      variant: "destructive",
+    });
+    return null;
   }
 
   return (
-    <div>
-      <div ref={contentRef}>
-        <h1>{document.filename}</h1>
-        <p>
-          <strong>ID:</strong> {document.id}
-        </p>
-        <p>
-          <strong>Caminho do Arquivo:</strong> {document.filepath}
-        </p>
-        <h2>Resultados OCR:</h2>
-        {document.ocrResults.map((ocr, index) => (
-          <div key={index}>
-            <h3>Resultado {index + 1}</h3>
-            <p>
-              <strong>Texto:</strong> {ocr.text}
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
+      <div className="w-full max-w-2xl bg-white p-4 mb-5 rounded-lg shadow-md">
+        <div className="p-6 space-y-6">
+          <div ref={contentRef} className="space-y-4">
+            <h1 className="text-3xl font-bold">{document.filename}</h1>
+            <p className="text-lg">
+              <strong>ID:</strong> {document.id}
             </p>
-            <p>
-              <strong>Criado em:</strong> {ocr.createdAt}
+            <p className="text-lg">
+              <strong>Caminho do Arquivo:</strong> {document.filepath}
             </p>
-            <h4>Resultados do LLM:</h4>
-            {ocr.llmResults.length > 0 ? (
-              ocr.llmResults.map((llm, llmIndex) => (
-                <div key={llmIndex}>
-                  <p>
-                    <strong>Pergunta:</strong> {llm.question}
-                  </p>
-                  <p>
-                    <strong>Resposta:</strong> {llm.response}
-                  </p>
-                  <p>
-                    <strong>Criado em:</strong> {llm.createdAt}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p>Sem resultados do LLM.</p>
-            )}
+            <h2 className="text-2xl font-semibold">Resultados OCR:</h2>
+            {document.ocrResults.map((ocr, index) => (
+              <div key={index} className="space-y-4">
+                <h3 className="text-xl font-semibold">Resultado {index + 1}</h3>
+                <p>
+                  <strong>Texto:</strong> {ocr.text}
+                </p>
+                <p>
+                  <strong>Criado em:</strong> {ocr.createdAt}
+                </p>
+                <h4 className="text-lg font-medium">Resultados do LLM:</h4>
+                {ocr.llmResults.length > 0 ? (
+                  ocr.llmResults.map((llm, llmIndex) => (
+                    <div key={llmIndex} className="space-y-2">
+                      <p>
+                        <strong>Pergunta:</strong> {llm.question}
+                      </p>
+                      <p>
+                        <strong>Resposta:</strong> {llm.response}
+                      </p>
+                      <p>
+                        <strong>Criado em:</strong> {llm.createdAt}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p>Sem resultados do LLM.</p>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+          <Button
+            onClick={handleDownloadPdf}
+            color="primary"
+            className="w-full mt-4"
+          >
+            Salvar como PDF
+          </Button>
+          {downloadProgress > 0 && downloadProgress < 100 && (
+            <Progress value={downloadProgress} className="mt-4" />
+          )}
+        </div>
       </div>
-      <button onClick={handleDownloadPdf}>Salvar como PDF</button>
     </div>
   );
 }

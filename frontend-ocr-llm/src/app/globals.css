@@ -3,7 +3,22 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Helvetica, sans-serif;
+}
+
+@font-face {
+  font-family: 'GROBOLD';
+  src: url('/fonts/GROBOLD.ttf') format('woff');
+}
+
+.custom-font {
+  font-family: 'GROBOLD', sans-serif;
+}
+
+html, body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 @layer base {
