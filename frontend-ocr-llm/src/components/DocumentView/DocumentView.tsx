@@ -7,6 +7,8 @@ import html2canvas from "html2canvas";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface OcrResult {
   text: string;
@@ -117,58 +119,56 @@ export default function DocumentView({ documentId }: { documentId: string }) {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
-      <div className="w-full max-w-2xl bg-white p-4 mb-5 rounded-lg shadow-md">
-        <div className="p-6 space-y-6">
-          <div ref={contentRef} className="space-y-4">
-            <h1 className="text-3xl font-bold">{document.filename}</h1>
-            <p className="text-lg">
-              <strong>ID:</strong> {document.id}
-            </p>
-            <p className="text-lg">
-              <strong>Caminho do Arquivo:</strong> {document.filepath}
-            </p>
-            <h2 className="text-2xl font-semibold">Resultados OCR:</h2>
-            {document.ocrResults.map((ocr, index) => (
-              <div key={index} className="space-y-4">
-                <h3 className="text-xl font-semibold">Resultado {index + 1}</h3>
-                <p>
-                  <strong>Texto:</strong> {ocr.text}
-                </p>
-                <p>
-                  <strong>Criado em:</strong> {ocr.createdAt}
-                </p>
-                <h4 className="text-lg font-medium">Resultados do LLM:</h4>
-                {ocr.llmResults.length > 0 ? (
-                  ocr.llmResults.map((llm, llmIndex) => (
-                    <div key={llmIndex} className="space-y-2">
-                      <p>
-                        <strong>Pergunta:</strong> {llm.question}
-                      </p>
-                      <p>
-                        <strong>Resposta:</strong> {llm.response}
-                      </p>
-                      <p>
-                        <strong>Criado em:</strong> {llm.createdAt}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p>Sem resultados do LLM.</p>
-                )}
+      <div className="p-6 space-y-6">
+        <div ref={contentRef} className="space-y-4">
+          <h1 className="text-3xl font-bold">{document.filename}</h1>
+          <h2 className="text-2xl font-semibold">Resultados OCR:</h2>
+          {document.ocrResults.map((ocr, index) => (
+            <div key={index} className="space-y-4">
+              <h3 className="text-xl font-semibold">Resultado {index + 1}</h3>
+              <div>
+                <strong>Texto:</strong>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {ocr.text}
+                </ReactMarkdown>
               </div>
-            ))}
-          </div>
-          <Button
-            onClick={handleDownloadPdf}
-            color="primary"
-            className="w-full mt-4"
-          >
-            Salvar como PDF
-          </Button>
-          {downloadProgress > 0 && downloadProgress < 100 && (
-            <Progress value={downloadProgress} className="mt-4" />
-          )}
+              <p>
+                <strong>Criado em:</strong> {ocr.createdAt}
+              </p>
+              <h4 className="text-lg font-medium">Resultados do LLM:</h4>
+              {ocr.llmResults.length > 0 ? (
+                ocr.llmResults.map((llm, llmIndex) => (
+                  <div key={llmIndex} className="space-y-2">
+                    <p>
+                      <strong>Pergunta:</strong> {llm.question}
+                    </p>
+                    <div>
+                      <strong>Resposta:</strong>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {llm.response}
+                      </ReactMarkdown>
+                    </div>
+                    <p>
+                      <strong>Criado em:</strong> {llm.createdAt}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p>Sem resultados do LLM.</p>
+              )}
+            </div>
+          ))}
         </div>
+        <Button
+          onClick={handleDownloadPdf}
+          color="primary"
+          className="w-full mt-4"
+        >
+          Salvar como PDF
+        </Button>
+        {downloadProgress > 0 && downloadProgress < 100 && (
+          <Progress value={downloadProgress} className="mt-4" />
+        )}
       </div>
     </div>
   );

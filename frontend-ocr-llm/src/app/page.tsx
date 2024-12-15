@@ -5,6 +5,8 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface OcrUploadResponse {
   ocrId: number;
@@ -19,6 +21,7 @@ export default function OcrChatPage() {
     { role: string; text: string }[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -47,13 +50,14 @@ export default function OcrChatPage() {
           },
         }
       );
-
-      setOcrId(response.data.ocrId);
+      const uploadedOcrId = response.data.ocrId;
+      setOcrId(uploadedOcrId);
       setChatHistory([]);
       toast({
-        description:
-          "Arquivo processado com sucesso! Agora você pode fazer perguntas.",
+        description: "Arquivo processado com sucesso! Buscando explicação...",
       });
+
+      await fetchExplanation(uploadedOcrId);
     } catch (error) {
       console.error("Erro ao fazer upload do arquivo:", error);
       toast({
@@ -62,6 +66,22 @@ export default function OcrChatPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExplanation = async (ocrId: number) => {
+    try {
+      const response = await axios.post<{ explanation: string }>(
+        "http://localhost:4200/llm/explain",
+        { ocrId }
+      );
+      setExplanation(response.data.explanation);
+    } catch (error) {
+      console.error("Erro ao buscar explicação:", error);
+      toast({
+        description: "Ocorreu um erro ao buscar a explicação.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -104,9 +124,11 @@ export default function OcrChatPage() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
-      <div className="w-full max-w-2xl bg-white p-4 rounded-lg shadow-md">
+      <div className="w-full max-w-2xl bg-white p-4 mb-5 rounded-lg shadow-md">
         <div className="p-6 space-y-6">
-          <h1 className="text-3xl font-semibold text-center mb-6 custom-font">OCR Chat</h1>
+          <h1 className="text-3xl font-semibold text-center mb-6 custom-font">
+            OCR Chat
+          </h1>
 
           <div className="space-y-4">
             <Input
@@ -124,6 +146,16 @@ export default function OcrChatPage() {
               {loading ? "Enviando..." : "Enviar"}
             </Button>
           </div>
+
+          {explanation && (
+            <div className="bg-gray-200 p-4 rounded-lg mb-4">
+              <h2 className="text-xl font-semibold mb-2">Contexto do Texto:</h2>
+
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {explanation}
+              </ReactMarkdown>
+            </div>
+          )}
 
           {ocrId && (
             <div className="flex flex-col h-96 overflow-hidden">
@@ -146,7 +178,13 @@ export default function OcrChatPage() {
                       }`}
                     >
                       <strong>{entry.role === "user" ? "Você" : "LLM"}:</strong>{" "}
-                      {entry.text}
+                      {entry.role === "llm" ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {entry.text}
+                        </ReactMarkdown>
+                      ) : (
+                        entry.text
+                      )}
                     </div>
                   </div>
                 ))}
