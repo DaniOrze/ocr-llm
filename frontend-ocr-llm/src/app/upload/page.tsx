@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface OcrResponse {
   ocrText: string;
@@ -74,9 +76,11 @@ export default function FileUploadPage() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
-      <div className="w-full max-w-2xl bg-white p-4 rounded-lg shadow-md">
+      <div className="w-full max-w-2xl bg-white p-4 mb-4 rounded-lg shadow-md">
         <div className="p-6 space-y-6">
-        <h1 className="text-3xl font-semibold text-center mb-6 custom-font">OCR Transcrito</h1>
+          <h1 className="text-3xl font-semibold text-center mb-6 custom-font">
+            OCR Transcrito
+          </h1>
 
           <div className="space-y-4">
             <Input
@@ -105,12 +109,12 @@ export default function FileUploadPage() {
           {response && (
             <div className="mt-8 p-4 bg-gray-100 rounded-lg shadow-lg">
               <h2 className="text-2xl font-semibold">Resposta do Servidor</h2>
-              <p>
-                <strong>Texto OCR:</strong> {response.ocrText}
-              </p>
-              <p>
-                <strong>ID OCR:</strong> {response.ocrId}
-              </p>
+              <div>
+                <strong>Texto OCR:</strong>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {response.ocrText}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
         </div>

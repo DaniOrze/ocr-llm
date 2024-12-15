@@ -34,4 +34,20 @@ export class LlmController {
 
     return { response, llmResultId: llmResult.id };
   }
+
+  @Post('explain')
+  async explainOcrText(@Body() { ocrId }: { ocrId: number }) {
+    const ocr = await this.prisma.ocrResult.findUnique({
+      where: { id: ocrId },
+    });
+    if (!ocr) {
+      throw new NotFoundException('OCR result not found');
+    }
+
+    const explanation = await this.llmService.generateText(
+      `Explique o seguinte texto:\n\n${ocr.text}`,
+    );
+
+    return { explanation };
+  }
 }
