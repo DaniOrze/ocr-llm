@@ -30,8 +30,13 @@ export default function DocumentView({ documentId }: { documentId: string }) {
   useEffect(() => {
     async function fetchDocument() {
       try {
+
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        const fileUrl = `${apiUrl}/ocr/view/${documentId}`;
+
         const response = await fetch(
-          `http://localhost:4200/ocr/view/${documentId}`,
+          fileUrl,
           {
             method: "GET",
             credentials: "include",
