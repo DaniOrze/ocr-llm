@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -24,7 +22,6 @@ interface Document {
 }
 
 export default function DocumentView({ documentId }: { documentId: string }) {
-  const { toast } = useToast();
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,10 +31,20 @@ export default function DocumentView({ documentId }: { documentId: string }) {
   useEffect(() => {
     async function fetchDocument() {
       try {
-        const response = await axios.get<Document>(
-          `http://localhost:4200/ocr/view/${documentId}`
+        const response = await fetch(
+          `http://localhost:4200/ocr/view/${documentId}`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
         );
-        setDocument(response.data);
+
+        if (!response.ok) {
+          throw new Error("Erro ao carregar documento");
+        }
+
+        const data: Document = await response.json();
+        setDocument(data);
         setLoading(false);
       } catch {
         setError("Erro ao carregar documento");
@@ -86,9 +93,6 @@ export default function DocumentView({ documentId }: { documentId: string }) {
 
     pdf.save(`${document?.filename || "documento"}.pdf`);
 
-    toast({
-      description: "PDF gerado com sucesso!",
-    });
     setDownloadProgress(0);
   };
 
@@ -102,18 +106,10 @@ export default function DocumentView({ documentId }: { documentId: string }) {
   }
 
   if (error) {
-    toast({
-      description: error,
-      variant: "destructive",
-    });
     return null;
   }
 
   if (!document) {
-    toast({
-      description: "Documento não encontrado",
-      variant: "destructive",
-    });
     return null;
   }
 
