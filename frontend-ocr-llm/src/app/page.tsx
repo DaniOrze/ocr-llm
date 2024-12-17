@@ -60,7 +60,7 @@ export default function OcrChatPage() {
     formData.append("file", selectedFile);
 
     try {
-      const res = await fetch("http://localhost:4200/ocr/upload", {
+      const res = await fetch(process.env.BASE_URL + "/ocr/upload", {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -93,7 +93,7 @@ export default function OcrChatPage() {
 
   const fetchExplanation = async (ocrId: number) => {
     try {
-      const res = await fetch("http://localhost:4200/llm/explain", {
+      const res = await fetch(process.env.BASE_URL + "/llm/explain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -128,7 +128,7 @@ export default function OcrChatPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:4200/llm/ask", {
+      const res = await fetch(process.env.BASE_URL + "/llm/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
