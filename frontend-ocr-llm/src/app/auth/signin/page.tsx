@@ -13,7 +13,7 @@ export default function SigninPage() {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:4200/auth/signin", {
+      const response = await fetch(process.env.BASE_URL + "/auth/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

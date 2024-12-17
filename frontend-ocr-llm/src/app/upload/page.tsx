@@ -78,7 +78,7 @@ export default function FileUploadPage() {
         return;
       }
 
-      const res = await fetch("http://localhost:4200/ocr/upload", {
+      const res = await fetch(process.env.BASE_URL + "/ocr/upload", {
         method: "POST",
         body: formData,
         credentials: "include",
