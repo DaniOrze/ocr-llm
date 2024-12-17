@@ -34,8 +34,10 @@ export class AuthController {
     const token = await this.authService.signToken(payload);
 
     res.cookie('token', token, {
+      httpOnly: true,
+      sameSite: "none",
       secure: true,
-      sameSite: 'strict',
+      domain: process.env.COOKIE_DOMAIN,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });    
 
@@ -66,8 +68,10 @@ export class AuthController {
     const token = await this.authService.signToken(payload);
 
     res.cookie('token', token, {
+      httpOnly: true,
+      sameSite: "none",
       secure: true,
-      sameSite: 'strict',
+      domain: process.env.COOKIE_DOMAIN,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     
