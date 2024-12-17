@@ -78,7 +78,7 @@ export default function FileUploadPage() {
         return;
       }
 
-      const res = await fetch(process.env.BASE_URL + "/ocr/upload", {
+      const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/ocr/upload", {
         method: "POST",
         body: formData,
         credentials: "include",

@@ -14,8 +14,11 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const loginUrl = `${apiUrl}/auth/login`;
+
     try {
-      const response = await fetch(process.env.BASE_URL + "/auth/login", {
+      const response = await fetch(loginUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

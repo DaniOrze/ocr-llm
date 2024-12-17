@@ -1,6 +1,6 @@
 import { Controller, Post, Body, NotFoundException, UseGuards, Request } from '@nestjs/common';
-import { PrismaService } from 'src/services/prisma.service';
-import { LlmService } from 'src/services/llm.service';
+import { PrismaService } from '../../services/prisma.service';
+import { LlmService } from '../../services/llm.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('llm')
