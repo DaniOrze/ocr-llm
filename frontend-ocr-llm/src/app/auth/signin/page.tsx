@@ -23,10 +23,12 @@ export default function SigninPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(errorData.message || "Erro ao cadastrar");
+        toast({
+          description: errorData.message || "Erro ao cadastrar",
+          variant: "destructive",
+        });
         return;
       }
-
 
       toast({
         description: "Conta criada com sucesso!",
@@ -35,7 +37,10 @@ export default function SigninPage() {
       router.push("/auth/login");
     } catch (error) {
       console.error("Erro na requisição:", error);
-      alert("Erro na requisição");
+      toast({
+        description: "Erro na requisição",
+        variant: "destructive",
+      });
     }
   };
 

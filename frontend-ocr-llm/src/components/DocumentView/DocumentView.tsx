@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import html2pdf from "html2pdf.js";
 
 interface OcrResult {
   text: string;
@@ -59,40 +58,19 @@ export default function DocumentView({ documentId }: { documentId: string }) {
     if (!contentRef.current) return;
 
     const element = contentRef.current;
-    const canvas = await html2canvas(element, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
 
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
+    // Configurações do html2pdf
+    const options = {
+      margin: 10,
+      filename: `${document?.filename || "documento"}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    };
 
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const padding = 10;
-    const imgWidth = pageWidth - padding * 2;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = padding;
-
-    pdf.addImage(imgData, "PNG", padding, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight - padding * 2;
-
-    while (heightLeft > 0) {
-      pdf.addPage();
-      position = padding;
-      pdf.addImage(imgData, "PNG", padding, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - padding * 2;
-    }
-
-    for (let i = 0; i <= 100; i++) {
-      setDownloadProgress(i);
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    }
-
-    pdf.save(`${document?.filename || "documento"}.pdf`);
-
+    // Inicia o processo de download do PDF
+    setDownloadProgress(1);
+    await html2pdf().set(options).from(element).save();
     setDownloadProgress(0);
   };
 
