@@ -1,6 +1,7 @@
-import { Controller, Post, Body, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, NotFoundException, UseGuards, Request } from '@nestjs/common';
 import { PrismaService } from 'src/services/prisma.service';
 import { LlmService } from 'src/services/llm.service';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('llm')
 export class LlmController {
@@ -10,9 +11,17 @@ export class LlmController {
   ) {}
 
   @Post('ask')
+  @UseGuards(AuthGuard('jwt'))
   async askLlm(
     @Body() { question, ocrId }: { question: string; ocrId: number },
+    @Request() req
   ) {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new NotFoundException('User not found');
+    }
+
     const ocr = await this.prisma.ocrResult.findUnique({
       where: { id: ocrId },
     });
@@ -36,7 +45,14 @@ export class LlmController {
   }
 
   @Post('explain')
-  async explainOcrText(@Body() { ocrId }: { ocrId: number }) {
+  @UseGuards(AuthGuard('jwt'))
+  async explainOcrText(@Body() { ocrId }: { ocrId: number }, @Request() req) {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new NotFoundException('User not found');
+    }
+    
     const ocr = await this.prisma.ocrResult.findUnique({
       where: { id: ocrId },
     });

@@ -6,11 +6,14 @@ import {
   Get,
   NotFoundException,
   Param,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { OcrService } from 'src/services/ocr.service';
 import { Multer } from 'multer';
 import { PrismaService } from 'src/services/prisma.service';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('ocr')
 export class OcrController {
@@ -20,13 +23,23 @@ export class OcrController {
   ) {}
 
   @Post('upload')
+  @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Multer.File): Promise<any> {
+  async uploadFile(
+    @UploadedFile() file: Multer.File,
+    @Request() req,
+  ): Promise<any> {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new NotFoundException('User not found');
+    }
 
     const uploadedFile = await this.prisma.uploadedFile.create({
       data: {
         filename: file.originalname,
         filepath: file.path,
+        userId: userId,
       },
     });
 
@@ -42,8 +55,19 @@ export class OcrController {
   }
 
   @Get('view')
-  async viewUploadedDocuments() {
+  @UseGuards(AuthGuard('jwt'))
+  async viewUploadedDocuments(@Request() req) {
+
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new NotFoundException('User not found');
+    }
+
     const uploadedDocuments = await this.prisma.uploadedFile.findMany({
+      where: {
+        userId: userId,
+      },
       include: {
         ocrResults: {
           include: {
@@ -52,19 +76,19 @@ export class OcrController {
         },
       },
     });
-  
+
     if (!uploadedDocuments || uploadedDocuments.length === 0) {
       throw new NotFoundException('No uploaded documents found');
     }
-  
-    return uploadedDocuments.map(document => ({
+
+    return uploadedDocuments.map((document) => ({
       id: document.id,
       filename: document.filename,
       filepath: document.filepath,
-      ocrResults: document.ocrResults.map(ocr => ({
+      ocrResults: document.ocrResults.map((ocr) => ({
         text: ocr.text,
         createdAt: ocr.createdAt,
-        llmResults: ocr.llmResults.map(llm => ({
+        llmResults: ocr.llmResults.map((llm) => ({
           question: llm.question,
           response: llm.response,
           createdAt: llm.createdAt,
@@ -74,16 +98,24 @@ export class OcrController {
   }
 
   @Get('view/:id')
-  async viewUploadedDocumentById(@Param('id') id: string) {
+  @UseGuards(AuthGuard('jwt'))
+  async viewUploadedDocumentById(@Param('id') id: string, @Request() req) {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new NotFoundException('User not found');
+    }
+    
     const documentId = parseInt(id, 10);
-  
+
     if (isNaN(documentId)) {
       throw new NotFoundException('ID inválido');
     }
-  
+
     const document = await this.prisma.uploadedFile.findUnique({
       where: {
         id: documentId,
+        userId: userId,
       },
       include: {
         ocrResults: {
@@ -93,19 +125,19 @@ export class OcrController {
         },
       },
     });
-  
+
     if (!document) {
       throw new NotFoundException('Documento não encontrado');
     }
-  
+
     return {
       id: document.id,
       filename: document.filename,
       filepath: document.filepath,
-      ocrResults: document.ocrResults.map(ocr => ({
+      ocrResults: document.ocrResults.map((ocr) => ({
         text: ocr.text,
         createdAt: ocr.createdAt,
-        llmResults: ocr.llmResults.map(llm => ({
+        llmResults: ocr.llmResults.map((llm) => ({
           question: llm.question,
           response: llm.response,
           createdAt: llm.createdAt,
@@ -113,4 +145,4 @@ export class OcrController {
       })),
     };
   }
-}  
+}

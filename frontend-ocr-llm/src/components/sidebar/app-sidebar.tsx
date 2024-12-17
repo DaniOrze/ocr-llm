@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BotMessageSquare, HardDriveUpload } from "lucide-react";
-import axios from "axios";
+import { useAuth } from "@/components/context/AuthContext";
+import { BotMessageSquare, HardDriveUpload, LogOut } from "lucide-react";
+import Cookies from "js-cookie";
 import {
   Sidebar,
   SidebarContent,
@@ -42,19 +43,48 @@ const items = [
 
 export function AppSidebar() {
   const [files, setFiles] = useState<UploadedFile[]>([]);
+  const { isAuthenticated, setIsAuthenticated } = useAuth();
 
   useEffect(() => {
-    async function fetchFiles() {
-      try {
-        const response = await axios.get<UploadedFile[]>("http://localhost:4200/ocr/view");
-        setFiles(response.data);
-      } catch (error) {
-        console.error("Erro ao carregar documentos", error);
-      }
-    }
+    if (isAuthenticated) {
+      async function fetchFiles() {
+        try {
+          const response = await fetch("http://localhost:4200/ocr/view", {
+            method: "GET",
+            credentials: "include",
+          });
 
-    fetchFiles();
-  }, []);
+          if (!response.ok) {
+            setFiles([]);
+            return;
+          }
+
+          const data: UploadedFile[] = await response.json();
+
+          if (!data || data.length === 0) {
+            setFiles([]);
+          } else {
+            setFiles(data);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar documentos", error);
+          setFiles([]);
+        }
+      }
+
+      fetchFiles();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogout = () => {
+    Cookies.remove("token");
+    setIsAuthenticated(false);
+    window.location.href = "/auth/login";
+  };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Sidebar>
@@ -73,28 +103,37 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              <SidebarGroup>
-                <SidebarGroupLabel>Lista de Arquivos</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {files.length === 0 ? (
-                      <SidebarMenuItem>
-                        <span>Sem arquivos</span>
-                      </SidebarMenuItem>
-                    ) : (
-                      files.map((file) => (
-                        <SidebarMenuItem key={file.id}>
-                          <SidebarMenuButton asChild>
-                            <a href={`/files/${file.id}`}>
-                              <span>{file.filename}</span>
-                            </a>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))
-                    )}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button onClick={handleLogout} className="flex items-center gap-2">
+                    <LogOut />
+                    <span>Logout</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Lista de Arquivos</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {files.length === 0 ? (
+                <SidebarMenuItem>
+                  <span>Sem arquivos</span>
+                </SidebarMenuItem>
+              ) : (
+                files.map((file) => (
+                  <SidebarMenuItem key={file.id}>
+                    <SidebarMenuButton asChild>
+                      <a href={`/files/${file.id}`}>
+                        <span>{file.filename}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

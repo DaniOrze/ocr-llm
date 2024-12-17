@@ -7,36 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        Int             @id @default(autoincrement())
+  email     String          @unique
+  password  String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime @updatedAt
+
+  uploadedFiles UploadedFile[]
+}
+
 model OcrResult {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   fileId    Int
   text      String
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 
-  // Relacionamento com UploadedFile
   file UploadedFile @relation(fields: [fileId], references: [id])
 
-  // Relacionamento com LlmResult
   llmResults LlmResult[]
 }
 
 model LlmResult {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   ocrId     Int
   question  String
   response  String
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 
-  // Relacionamento com OcrResult
   ocr OcrResult @relation(fields: [ocrId], references: [id])
 }
 
 model UploadedFile {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   filename  String
   filepath  String
-  createdAt DateTime @default(now())
+  userId    Int
+  createdAt DateTime   @default(now())
 
-  // Relacionamento com OcrResult
+  user User @relation(fields: [userId], references: [id])
+
   ocrResults OcrResult[]
 }

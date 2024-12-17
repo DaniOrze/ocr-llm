@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface OcrResponse {
   ocrText: string;
@@ -20,6 +22,21 @@ export default function FileUploadPage() {
   const [response, setResponse] = useState<OcrResponse | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = Cookies.get("token");
+    if (!token) {
+      router.push("/auth/login");
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
+
+  if (!isAuthenticated) {
+    return <p>Verificando autenticação...</p>;
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -48,9 +65,23 @@ export default function FileUploadPage() {
     setUploadProgress(0);
 
     try {
+      const token = Cookies.get("token");
+
+      console.log(token);
+
+      if (!token) {
+        toast({
+          description: "Usuário não autenticado. Faça login novamente.",
+          variant: "destructive",
+        });
+        setUploading(false);
+        return;
+      }
+
       const res = await fetch("http://localhost:4200/ocr/upload", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
 
       if (!res.ok) {

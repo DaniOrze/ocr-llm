@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface OcrUploadResponse {
   ocrId: number;
@@ -22,6 +23,8 @@ export default function OcrChatPage() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -29,28 +32,47 @@ export default function OcrChatPage() {
     }
   };
 
+  useEffect(() => {
+    const token = Cookies.get("token");
+
+    if (!token) {
+      router.push("/auth/signin");
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
+
+  if (!isAuthenticated) {
+    return <p>Verificando autenticação...</p>;
+  }
+
   const uploadFile = async () => {
-    if (!selectedFile)
-      return toast({
+    if (!selectedFile) {
+      toast({
         description: "Por favor, selecione um arquivo!",
         variant: "destructive",
       });
+      return;
+    }
 
     setLoading(true);
     const formData = new FormData();
     formData.append("file", selectedFile);
 
     try {
-      const response = await axios.post<OcrUploadResponse>(
-        "http://localhost:4200/ocr/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      const uploadedOcrId = response.data.ocrId;
+      const res = await fetch("http://localhost:4200/ocr/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao fazer upload do arquivo");
+      }
+
+      const data: OcrUploadResponse = await res.json();
+      const uploadedOcrId = data.ocrId;
+
       setOcrId(uploadedOcrId);
       setChatHistory([]);
       toast({
@@ -71,11 +93,19 @@ export default function OcrChatPage() {
 
   const fetchExplanation = async (ocrId: number) => {
     try {
-      const response = await axios.post<{ explanation: string }>(
-        "http://localhost:4200/llm/explain",
-        { ocrId }
-      );
-      setExplanation(response.data.explanation);
+      const res = await fetch("http://localhost:4200/llm/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ocrId }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao buscar explicação");
+      }
+
+      const data = await res.json();
+      setExplanation(data.explanation);
     } catch (error) {
       console.error("Erro ao buscar explicação:", error);
       toast({
@@ -86,28 +116,35 @@ export default function OcrChatPage() {
   };
 
   const askQuestion = async () => {
-    if (!ocrId)
-      return toast({
+    if (!ocrId) {
+      toast({
         description: "Por favor, envie um arquivo antes de fazer perguntas!",
         variant: "destructive",
       });
+      return;
+    }
     if (!question.trim()) return;
 
     setLoading(true);
 
     try {
-      const response = await axios.post<{ response: string }>(
-        "http://localhost:4200/llm/ask",
-        {
-          question,
-          ocrId,
-        }
-      );
+      const res = await fetch("http://localhost:4200/llm/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ question, ocrId }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao fazer pergunta");
+      }
+
+      const data = await res.json();
 
       setChatHistory((prev) => [
         ...prev,
         { role: "user", text: question },
-        { role: "llm", text: response.data.response },
+        { role: "llm", text: data.response },
       ]);
 
       setQuestion("");
@@ -150,7 +187,6 @@ export default function OcrChatPage() {
           {explanation && (
             <div className="bg-gray-200 p-4 rounded-lg mb-4">
               <h2 className="text-xl font-semibold mb-2">Contexto do Texto:</h2>
-
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {explanation}
               </ReactMarkdown>
