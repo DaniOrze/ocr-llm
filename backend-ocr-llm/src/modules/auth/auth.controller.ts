@@ -6,8 +6,8 @@ import {
   ConflictException,
   Res,
 } from '@nestjs/common';
-import { AuthService } from 'src/services/auth/auth.service';
-import { PrismaService } from 'src/services/prisma.service';
+import { AuthService } from '../../services/auth/auth.service';
+import { PrismaService } from '../../services/prisma.service';
 import { Response } from 'express';
 
 @Controller('auth')

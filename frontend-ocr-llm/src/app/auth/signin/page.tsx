@@ -12,8 +12,11 @@ export default function SigninPage() {
   const handleSignin = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const signinUrl = `${apiUrl}/auth/signin`;
+
     try {
-      const response = await fetch(process.env.BASE_URL + "/auth/signin", {
+      const response = await fetch(signinUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

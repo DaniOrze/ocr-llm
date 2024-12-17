@@ -49,7 +49,7 @@ export function AppSidebar() {
     if (isAuthenticated) {
       async function fetchFiles() {
         try {
-          const response = await fetch(process.env.BASE_URL + "/ocr/view", {
+          const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/ocr/view", {
             method: "GET",
             credentials: "include",
           });

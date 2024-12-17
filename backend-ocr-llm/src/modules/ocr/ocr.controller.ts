@@ -10,9 +10,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { OcrService } from 'src/services/ocr.service';
+import { OcrService } from '../../services/ocr.service';
 import { Multer } from 'multer';
-import { PrismaService } from 'src/services/prisma.service';
+import { PrismaService } from '../../services/prisma.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('ocr')
